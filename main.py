@@ -1,21 +1,14 @@
 import asyncio
+import logging
 
-from aiogram import Router, types
-from aiogram.filters import CommandStart
-from dotenv import load_dotenv
+from bot.handlers.start import start_command_router
 from bot.initialize_bot import dp, bot
 
-router = Router()
-load_dotenv('bot/.env')
-
-
-@router.message(CommandStart())
-async def handle_start(message: types.Message):
-    await bot.send_message(chat_id=message.chat.id, text="Hello! I'm your bot.")
+logging.basicConfig(level=logging.INFO)
 
 
 async def main():
-    dp.include_router(router)
+    dp.include_router(start_command_router)
     await dp.start_polling(bot)
 
 
