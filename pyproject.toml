@@ -1,0 +1,10 @@
+[project]
+name = "kolxoz-trading-telegram-bot"
+version = "0.1.0"
+description = "AI Telegram Bot for kolxoz trading"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiogram>=3.22.0",
+    "python-dotenv>=1.2.1",
+]
