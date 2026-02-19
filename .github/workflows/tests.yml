@@ -1,7 +1,6 @@
 name: Basic Tests
 
 on:
-  push:
   pull_request:
 
 permissions:
