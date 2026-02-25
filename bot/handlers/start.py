@@ -1,8 +1,8 @@
 from aiogram import Router, types
 from aiogram.filters import CommandStart
 
+from bot.agents.utils.get_decision import get_decision
 from bot.initialize_bot import bot
-from bot.keyboards.inline.crypto import crypto_keyboard
 from bot.keyboards.inline.menu import main_keyboard
 
 start_command_router = Router()
@@ -17,29 +17,17 @@ async def start_handler(message: types.Message):
     )
 
 
-@start_command_router.callback_query(lambda c: c.data in ["long", "short"])
-async def menu_handler(callback_query: types.CallbackQuery):
-    choice = callback_query.data
-
-    await callback_query.answer(chat_id=callback_query.message.chat.id, text=choice)
-    await callback_query.message.edit_reply_markup(
-        inline_message_id=str(callback_query.message.message_id),
-        text="Please choose another option:",
-        reply_markup=crypto_keyboard(),
-    )
-
-
-@start_command_router.callback_query(lambda c: c.data in ["bitcoin and ethereum"])
+@start_command_router.callback_query(lambda c: c.data in ["decision"])
 async def crypto_choice_handler(callback_query: types.CallbackQuery):
-    crypto = callback_query.data.upper()
-
-    await callback_query.answer(
-        chat_id=callback_query.message.chat.id, text=f"You selected {crypto}!"
-    )
-
     await callback_query.message.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text="Wait for updates...",
+        text="<b>Wait for updates...</b>",
+        reply_markup=None,
+    )
+    result = await get_decision()
+    await callback_query.message.edit_text(
+        inline_message_id=str(callback_query.message.message_id),
+        text=f"<code>{result}</code>",
         reply_markup=None,
     )
 
