@@ -4,6 +4,7 @@ Telegram bot for trading workflow automation.
 
 ## Requirements
 
+- `uv` installed (`uv --version`)
 - Python `>=3.13`
 - Telegram bot token from BotFather
 
@@ -13,75 +14,48 @@ Create `.env` in the project root (or `bot/.env`):
 
 BOT_TOKEN=your_telegram_bot_token
 
-## Local run (venv + pip)
+## Setup and run with uv
 
-### Linux / macOS (Fish)
+### 1) Create project virtual environment
 
-1) Create venv:
-python3 -m venv venv
+uv venv
 
-2) Activate:
-source venv/bin/activate.fish
+By default, `uv` creates `.venv` in the project root.
 
-3) Install dependencies:
-pip install -r requirements.txt
+### 2) Install/sync dependencies
 
-4) Run bot:
-python main.py
+uv sync
 
-### Linux / macOS (Bash/Zsh)
+### 3) Run bot
 
-1) Create venv:
-python3 -m venv venv
+uv run main.py
 
-2) Activate:
-source venv/bin/activate
-
-3) Install dependencies:
-pip install -r requirements.txt
-
-4) Run bot:
-python main.py
-
-### Windows (PowerShell)
-
-1) Create venv:
-py -3 -m venv venv
-
-2) Activate:
-.\venv\Scripts\Activate.ps1
-
-3) Install dependencies:
-pip install -r requirements.txt
-
-4) Run bot:
-python main.py
-
-### Windows (CMD)
-
-1) Create venv:
-py -3 -m venv venv
-
-2) Activate:
-venv\Scripts\activate.bat
-
-3) Install dependencies:
-pip install -r requirements.txt
-
-4) Run bot:
-python main.py
+## Running tests
 
 Run all tests:
-python -m unittest discover -s tests -p "test_*.py" -v
+
+uv run python -m unittest discover -s tests -p "test_*.py" -v
 
 Run handler regression tests only:
-python -m unittest tests.handlers.test_start_handler_behavior -v
 
-## Notes
+uv run python -m unittest tests.handlers.test_start_handler_behavior -v
 
-- `.env` is ignored by git and must not be committed.
-- If editor shows unresolved imports, make sure it uses your project interpreter:
-  `/home/user/.../kolxoz_trading_telegram_bot/venv/bin/python`.
+## Optional: force Python version for venv
+
+If you need a specific Python version:
+
+uv venv --python 3.13 .venv
+uv sync
+
+## Useful commands
+
+Check active interpreter used by `uv run`:
+
+uv run python -c "import sys; print(sys.executable)"
+
+Quick import check:
+
+uv run python -c "import aiogram, dotenv; print('imports_ok')"
 
 ---
 
