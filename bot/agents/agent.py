@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from upsonic.agent import Agent
 from pydantic_ai import ModelSettings
-from bot.agents.prompts.trading_strategy import TRADING_STRATEGY
+from bot.agents.prompts.trading_strategy import PROMPT_TRADING_STRATEGY
 
 load_dotenv()
 
@@ -17,5 +17,5 @@ agent = Agent(
     name="BTC Trading Agent",
     role="Professional crypto trader using ICT/SMC methodology",
     goal="Analyze BTCUSDT and produce LONG/SHORT/WAIT decision",
-    instructions=f"{TRADING_STRATEGY}\n Translate into Russian language"
+    instructions=f"{PROMPT_TRADING_STRATEGY}\n Translate into Russian language"
 )
