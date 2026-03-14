@@ -69,20 +69,7 @@ venv\Scripts\activate.bat
 pip install -r requirements.txt
 
 4) Run bot:
-python main.p# Kolxoz Trading Telegram Bot
-
-Telegram bot for trading workflow automation.
-
-## Requirements
-
-- Python `>=3.13`
-- Telegram bot token from BotFather
-
-## Environment variables
-
-Create `.env` in the project root (or `bot/.env`):
-
-BOT_TOKEN=your_telegram_bot_token
+python main.py
 
 Run all tests:
 python -m unittest discover -s tests -p "test_*.py" -v
