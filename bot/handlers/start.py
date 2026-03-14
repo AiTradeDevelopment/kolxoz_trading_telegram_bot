@@ -1,9 +1,9 @@
 from aiogram import Router, types
 from aiogram.filters import CommandStart
 
-from bot.agents.utils.get_decision import get_decision
 from bot.initialize_bot import bot
 from bot.keyboards.inline.menu import main_keyboard
+from bot.utils.get_decision import get_decision
 
 start_command_router = Router()
 
@@ -21,13 +21,13 @@ async def start_handler(message: types.Message):
 async def crypto_choice_handler(callback_query: types.CallbackQuery):
     await callback_query.message.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text="<b>Wait for updates...</b>",
+        text="<b>I'm thinking🤔</b>",
         reply_markup=None,
     )
     result = await get_decision()
     await callback_query.message.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text=f"<code>{result}</code>",
+        text=result,
         reply_markup=None,
     )
 
