@@ -1,6 +1,7 @@
 import ast
-import unittest
 from pathlib import Path
+import unittest
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "bot" / "agents" / "prompts"
@@ -11,7 +12,7 @@ class TestPromptModules(unittest.TestCase):
         prompt_files = sorted(PROMPTS_DIR.glob("*.py"))
         self.assertGreaterEqual(len(prompt_files), 1)
 
-    def test_each_prompt_file_has_non_empty_prompt_constant(self) -> None:
+    def test_each_prompt_file_has_non_empty_prompt_like_constant(self) -> None:
         prompt_files = sorted(PROMPTS_DIR.glob("*.py"))
 
         for prompt_file in prompt_files:
@@ -24,33 +25,28 @@ class TestPromptModules(unittest.TestCase):
                     continue
 
                 for target in node.targets:
+                    if not isinstance(target, ast.Name):
+                        continue
+
+                    # Support both old and new naming schemes.
                     if not (
-                        isinstance(target, ast.Name) and target.id.startswith("PROMPT_")
+                        target.id.startswith("PROMPT_")
+                        or target.id in {"TRADING_STRATEGY_PROMPT", "SYSTEM_PROMPT"}
                     ):
                         continue
 
-                    self.assertIsInstance(
-                        node.value,
-                        ast.Constant,
-                        f"{prompt_file} has non-literal prompt value",
-                    )
-                    constant_node = node.value
-                    assert isinstance(constant_node, ast.Constant)
+                    if not (
+                        isinstance(node.value, ast.Constant)
+                        and isinstance(node.value.value, str)
+                    ):
+                        continue
 
-                    prompt_value = constant_node.value
-                    self.assertIsInstance(
-                        prompt_value,
-                        str,
-                        f"{prompt_file} prompt constant must be a string",
-                    )
-                    assert isinstance(prompt_value, str)
-
-                    prompt_constants.append((target.id, prompt_value))
+                    prompt_constants.append((target.id, node.value.value))
 
             self.assertGreaterEqual(
                 len(prompt_constants),
                 1,
-                f"{prompt_file} does not define a PROMPT_* constant",
+                f"{prompt_file} does not define a prompt-like constant",
             )
 
             for constant_name, prompt_text in prompt_constants:

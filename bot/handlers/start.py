@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart
 
 from bot.keyboards.inline.crypto import crypto_keyboard
 from bot.keyboards.inline.menu import main_keyboard
+from bot.utils.get_decision import get_decision
 
 start_command_router = Router()
 
