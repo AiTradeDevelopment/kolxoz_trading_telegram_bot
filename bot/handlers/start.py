@@ -1,53 +1,65 @@
-from aiogram import Router, types
+from aiogram import F, Router, types
 from aiogram.filters import CommandStart
 
-from bot.initialize_bot import bot
 from bot.keyboards.inline.crypto import crypto_keyboard
 from bot.keyboards.inline.menu import main_keyboard
 
 start_command_router = Router()
 
 
+def _get_editable_message(
+    callback_query: types.CallbackQuery,
+) -> types.Message | None:
+    message = callback_query.message
+    if isinstance(message, types.Message):
+        return message
+    return None
+
+
 @start_command_router.message(CommandStart())
-async def start_handler(message: types.Message):
-    await bot.send_message(
-        chat_id=message.chat.id,
+async def start_handler(message: types.Message) -> None:
+    await message.answer(
         text=f"<b>Hello, {message.chat.full_name}! Please choose option below:</b>",
         reply_markup=main_keyboard(),
     )
 
 
-@start_command_router.callback_query(lambda c: c.data in ["long", "short"])
-async def menu_handler(callback_query: types.CallbackQuery):
-    choice = callback_query.data
+@start_command_router.callback_query(F.data.in_(["long", "short"]))
+async def menu_handler(callback_query: types.CallbackQuery) -> None:
+    message = _get_editable_message(callback_query)
+    if message is None:
+        await callback_query.answer()
+        return
 
-    await callback_query.answer(chat_id=callback_query.message.chat.id, text=choice)
-    await callback_query.message.edit_reply_markup(
-        inline_message_id=str(callback_query.message.message_id),
+    choice = callback_query.data or ""
+    await callback_query.answer(text=choice)
+    await message.edit_text(
         text="Please choose another option:",
         reply_markup=crypto_keyboard(),
     )
 
 
-@start_command_router.callback_query(lambda c: c.data in ["bitcoin and ethereum"])
-async def crypto_choice_handler(callback_query: types.CallbackQuery):
-    crypto = callback_query.data.upper()
+@start_command_router.callback_query(F.data == "bitcoin and ethereum")
+async def crypto_choice_handler(callback_query: types.CallbackQuery) -> None:
+    message = _get_editable_message(callback_query)
+    if message is None:
+        await callback_query.answer()
+        return
 
-    await callback_query.answer(
-        chat_id=callback_query.message.chat.id, text=f"You selected {crypto}!"
-    )
-
-    await callback_query.message.edit_text(
-        inline_message_id=str(callback_query.message.message_id),
-        text="Wait for updates...",
-        reply_markup=None,
-    )
+    crypto = (callback_query.data or "").upper()
+    await callback_query.answer(text=f"You selected {crypto}!")
+    await message.edit_text(text="Wait for updates...")
 
 
-@start_command_router.callback_query(lambda c: c.data == "back_to_main")
-async def back_to_main_handler(callback_query: types.CallbackQuery):
-    await callback_query.message.edit_text(
-        text=f"<b>Hello, {callback_query.message.chat.full_name}! Please choose option below:</b>",
+@start_command_router.callback_query(F.data == "back_to_main")
+async def back_to_main_handler(callback_query: types.CallbackQuery) -> None:
+    message = _get_editable_message(callback_query)
+    if message is None:
+        await callback_query.answer()
+        return
+
+    await message.edit_text(
+        text=f"<b>Hello, {message.chat.full_name}! Please choose option below:</b>",
         reply_markup=main_keyboard(),
     )
     await callback_query.answer()
