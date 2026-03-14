@@ -1,4 +1,4 @@
-TRADING_STRATEGY = """
+PROMPT_TRADING_STRATEGY = """
 You are an autonomous real-time trading agent with access to live market tools.
 
 AVAILABLE TOOLS (use them ALL before making a decision):

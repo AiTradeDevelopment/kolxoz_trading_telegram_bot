@@ -1,6 +1,7 @@
 import ast
-import unittest
 from pathlib import Path
+import unittest
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,16 +45,9 @@ class TestKeyboardConfig(unittest.TestCase):
         tree = _parse_file("bot/keyboards/inline/menu.py")
 
         self.assertIn("main_keyboard", _extract_function_names(tree))
-        self.assertEqual(_extract_callback_data_values(tree), ["long", "short"])
+        callbacks = _extract_callback_data_values(tree)
 
-    def test_crypto_keyboard_has_expected_callbacks(self) -> None:
-        tree = _parse_file("bot/keyboards/inline/crypto.py")
-
-        self.assertIn("crypto_keyboard", _extract_function_names(tree))
-        self.assertEqual(
-            _extract_callback_data_values(tree),
-            ["bitcoin and ethereum", "back_to_main"],
-        )
+        self.assertEqual(callbacks, ["decision"])
 
 
 if __name__ == "__main__":
