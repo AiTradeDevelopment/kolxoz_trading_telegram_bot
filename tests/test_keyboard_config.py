@@ -1,18 +1,19 @@
 import ast
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def _parse_file(relative_path: str) -> ast.AST:
+def _parse_file(relative_path: str) -> ast.Module:
     file_path = PROJECT_ROOT / relative_path
     source = file_path.read_text(encoding="utf-8")
-    return ast.parse(source, filename=str(file_path))
+    tree = ast.parse(source, filename=str(file_path))
+    assert isinstance(tree, ast.Module)
+    return tree
 
 
-def _extract_function_names(tree: ast.AST) -> set[str]:
+def _extract_function_names(tree: ast.Module) -> set[str]:
     return {
         node.name
         for node in tree.body
@@ -20,7 +21,7 @@ def _extract_function_names(tree: ast.AST) -> set[str]:
     }
 
 
-def _extract_callback_data_values(tree: ast.AST) -> list[str]:
+def _extract_callback_data_values(tree: ast.Module) -> list[str]:
     callback_values: list[str] = []
 
     for node in ast.walk(tree):

@@ -1,7 +1,6 @@
 import ast
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "bot" / "agents" / "prompts"
@@ -26,8 +25,7 @@ class TestPromptModules(unittest.TestCase):
 
                 for target in node.targets:
                     if not (
-                        isinstance(target, ast.Name)
-                        and target.id.startswith("PROMPT_")
+                        isinstance(target, ast.Name) and target.id.startswith("PROMPT_")
                     ):
                         continue
 
@@ -36,12 +34,18 @@ class TestPromptModules(unittest.TestCase):
                         ast.Constant,
                         f"{prompt_file} has non-literal prompt value",
                     )
+                    constant_node = node.value
+                    assert isinstance(constant_node, ast.Constant)
+
+                    prompt_value = constant_node.value
                     self.assertIsInstance(
-                        node.value.value,
+                        prompt_value,
                         str,
                         f"{prompt_file} prompt constant must be a string",
                     )
-                    prompt_constants.append((target.id, node.value.value))
+                    assert isinstance(prompt_value, str)
+
+                    prompt_constants.append((target.id, prompt_value))
 
             self.assertGreaterEqual(
                 len(prompt_constants),
