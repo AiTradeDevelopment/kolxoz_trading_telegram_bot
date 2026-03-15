@@ -19,23 +19,32 @@ async def start_handler(message: types.Message):
 
 @start_command_router.callback_query(lambda c: c.data in ["decision"])
 async def crypto_choice_handler(callback_query: types.CallbackQuery):
-    await callback_query.message.edit_text(
-        inline_message_id=str(callback_query.message.message_id),
+    msg = callback_query.message
+    if not isinstance(msg, types.Message):
+        await callback_query.answer("Message is unavailable", show_alert=True)
+        return
+
+    await msg.edit_text(
         text="<b>I'm thinking🤔</b>",
         reply_markup=None,
     )
     result = await get_decision()
-    await callback_query.message.edit_text(
-        inline_message_id=str(callback_query.message.message_id),
+    await msg.edit_text(
         text=result,
         reply_markup=None,
     )
+    await callback_query.answer()
 
 
 @start_command_router.callback_query(lambda c: c.data == "back_to_main")
 async def back_to_main_handler(callback_query: types.CallbackQuery):
-    await callback_query.message.edit_text(
-        text=f"<b>Hello, {callback_query.message.chat.full_name}! Please choose option below:</b>",
+    msg = callback_query.message
+    if not isinstance(msg, types.Message):
+        await callback_query.answer("Message is unavailable", show_alert=True)
+        return
+
+    await msg.edit_text(
+        text=f"<b>Hello, {msg.chat.full_name}! Please choose option below:</b>",
         reply_markup=main_keyboard(),
     )
     await callback_query.answer()
