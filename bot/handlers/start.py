@@ -1,10 +1,11 @@
+import asyncio
 from aiogram import Router, types
 from aiogram.filters import CommandStart
 
 from bot.initialize_bot import bot
 from bot.keyboards.inline.menu import main_keyboard
 from bot.utils.format_position import format_position
-from bot.utils.get_decision import get_decision
+from bot.utils.get_decision import create_trading_agent, fetch_decision
 
 start_command_router = Router()
 
@@ -20,15 +21,31 @@ async def start_handler(message: types.Message):
 
 @start_command_router.callback_query(lambda c: c.data in ["decision"])
 async def crypto_choice_handler(callback_query: types.CallbackQuery):
+    # Initialize agent immediately to get the model name
+    agent = create_trading_agent()
+    model_name = agent.model_id
+
     thinking_msg = await callback_query.message.answer(
-        inline_message_id=str(callback_query.message.message_id),
-        text="<b>I'm thinking🤔</b>",
+        text=f"<b>I'm thinking🤔</b>\n🤖 <b>Model:</b> {model_name}",
         reply_markup=None,
     )
-    model,result = await get_decision()
+
+    # Create a task to fetch the decision in the background
+    task = asyncio.create_task(fetch_decision(agent))
+
+    try:
+        # Wait for a maximum of 30 seconds before updating the status
+        result = await asyncio.wait_for(task, timeout=30.0)
+    except asyncio.TimeoutError:
+        # Update message to indicate that it's taking longer
+        await thinking_msg.edit_text(
+            text=f"<b>I'm still thinking...🤔</b>\nIt's taking a bit more time, but the report is being generated.\n\n🤖 <b>Model:</b> {model_name}",
+            reply_markup=None,
+        )
+        result = await task
+
     await thinking_msg.edit_text(
-        inline_message_id=str(callback_query.message.message_id),
-        text=format_position(result),
+        text=format_position(result, model_name),
         reply_markup=main_keyboard(),
     )
 

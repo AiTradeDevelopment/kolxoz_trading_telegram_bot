@@ -1,7 +1,7 @@
 import json
 import re
 
-def format_position(content: str) -> str:
+def format_position(content: str, model_name: str = "") -> str:
     try:
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
         if json_match:
@@ -17,7 +17,7 @@ def format_position(content: str) -> str:
         data = json.loads(json_str)
         decision = data.get("decision", "WAIT").upper()
         if decision == "WAIT":
-            return "⏳ <b>No clear trade setup at the moment.</b>\n\n<i>AI is waiting for better confluence.</i>"
+            return f"⏳ <b>No clear trade setup at the moment.</b>\n\n<i>AI is waiting for better confluence.</i>\n\n🤖 <b>Model:</b> {model_name}"
 
         instrument = data.get("instrument", "Unknown")
         entry = data.get("entry_price")
@@ -37,7 +37,8 @@ def format_position(content: str) -> str:
             f"📊 <b>Risk/Reward:</b> {rr if rr else 'N/A'}\n"
             f"⭐ <b>Confidence Score:</b> {score}/10\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"📝 <b>Analysis:</b>\n{summary}"
+            f"📝 <b>Analysis:</b>\n{summary}\n\n"
+            f"🤖 <b>Model:</b> {model_name}"
         )
     except Exception as e:
         return f"⚠️ <b>Error parsing AI response</b>\n\n<code>{content[:200]}...</code>"

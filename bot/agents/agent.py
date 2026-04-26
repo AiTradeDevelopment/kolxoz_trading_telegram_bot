@@ -29,8 +29,9 @@ def get_random_model():
 
 
 def create_agent():
-    return Agent(
-        model=Nvidia(get_random_model(), temperature=0.2, frequency_penalty=0.0, presence_penalty=0.0),
+    model_id = get_random_model()
+    agent = Agent(
+        model=Nvidia(model_id, temperature=0.2, frequency_penalty=0.0, presence_penalty=0.0),
         name="BTC Trading Agent",
         role="Professional crypto trader using ICT/SMC methodology",
         instructions=f"{PROMPT_TRADING_STRATEGY}\n Translate into Russian language",
@@ -42,3 +43,5 @@ def create_agent():
             get_coindesk_news,
             fetch_mcp_data],
     )
+    agent.model_id = model_id
+    return agent
