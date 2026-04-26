@@ -1,21 +1,30 @@
+import random
+
 from dotenv import load_dotenv
-from upsonic.agent import Agent
-from pydantic_ai import ModelSettings
+from agno.models.nvidia import Nvidia
+from agno.agent import Agent
 from bot.agents.prompts.trading_strategy import PROMPT_TRADING_STRATEGY
+from bot.agents.mcp_run.fetch import fetch_mcp_data
+from bot.agents.mcp_tools.get_binance_candles import get_binance_candles
+from bot.agents.mcp_tools.get_cryptonews import get_coindesk_news
+from bot.agents.mcp_tools.get_cryptopanic_news import get_cryptopanic_news
+from bot.agents.mcp_tools.get_pivot_levels import get_pivot_levels
+from bot.agents.mcp_tools.get_tradingview_data import get_tradingview_data
 
 load_dotenv()
-
-SELECTED_MODEL = "mistral/codestral-latest"
+MODELS = ["mistralai/devstral-2-123b-instruct-2512","deepseek-ai/deepseek-v4-flash"]
+SELECTED_MODEL = random.choice(MODELS)
 
 agent = Agent(
-    settings=ModelSettings(
-        temperature=0.2,
-        presence_penalty=0.0,
-        frequency_penalty=0.0,
-    ),
-    model=SELECTED_MODEL,
+    model=Nvidia(SELECTED_MODEL, temperature=0.2, frequency_penalty=0.0, presence_penalty=0.0),
     name="BTC Trading Agent",
     role="Professional crypto trader using ICT/SMC methodology",
-    goal="Analyze BTCUSDT and produce LONG/SHORT/WAIT decision",
-    instructions=f"{PROMPT_TRADING_STRATEGY}\n Translate into Russian language"
+    instructions=f"{PROMPT_TRADING_STRATEGY}\n Translate into Russian language",
+    tools=[
+        get_binance_candles,
+        get_tradingview_data,
+        get_cryptopanic_news,
+        get_pivot_levels,
+        get_coindesk_news,
+        fetch_mcp_data],
 )
