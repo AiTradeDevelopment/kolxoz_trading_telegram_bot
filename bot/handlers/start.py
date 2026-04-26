@@ -1,5 +1,6 @@
 import asyncio
 from aiogram import Router, types
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart
 
 from bot.initialize_bot import bot
@@ -45,28 +46,45 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
         task = asyncio.create_task(fetch_decision(agent))
 
         # Periodically update the message while the AI is thinking
-        result = None
         while not task.done():
+            # Wait for either the task to complete or the timeout to trigger
+            # asyncio.wait does NOT cancel the task, unlike wait_for
+            done, _ = await asyncio.wait([task], timeout=15.0)
+
+            if task in done:
+                break
+
+            # Update message to indicate that it's still processing
             try:
-                # Wait for a short interval (15 seconds) before updating the status
-                result = await asyncio.wait_for(task, timeout=15.0)
-                break  # Task completed successfully
-            except asyncio.TimeoutError:
-                # Update message to indicate that it's still processing
                 await thinking_msg.edit_text(
                     text=f"<b>I'm still thinking...🤔</b>\nStill collecting data and analyzing. Please wait a bit more.\n\n🤖 <b>Model:</b> {model_name}",
                     reply_markup=None,
                 )
+            except TelegramBadRequest:
+                # Ignore error if message content hasn't changed
+                pass
 
-        if result is None:
+        # Retrieve the final result from the task
+        try:
+            response_data = await task
+        except Exception as e:
+            # Log the exception and set response_data to None so the error message is shown
+            import logging
+            logging.getLogger(__name__).exception(f"AI task failed with exception: {e}")
+            response_data = None
+
+        if response_data is None or (isinstance(response_data, tuple) and response_data[0] is None):
+            # Use the model name from the agent if the result is None
+            final_model = response_data[1] if response_data else model_name
             await thinking_msg.edit_text(
-                text=f"⚠️ <b>AI failed to provide a response</b>\n\n🤖 <b>Model:</b> {model_name}",
+                text=f"⚠️ <b>AI failed to provide a response after trying available models</b>\n\n🤖 <b>Model:</b> {final_model}",
                 reply_markup=main_keyboard(),
             )
             return
 
+        result_content, final_model = response_data
         await thinking_msg.edit_text(
-            text=format_position(result, model_name),
+            text=format_position(result_content, final_model),
             reply_markup=main_keyboard(),
         )
     finally:
