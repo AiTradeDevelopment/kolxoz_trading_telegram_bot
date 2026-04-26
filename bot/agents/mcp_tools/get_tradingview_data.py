@@ -1,10 +1,8 @@
 import json
 
 import httpx
-from upsonic.tools import tool
 
 
-@tool
 def get_tradingview_data(symbol: str = "BTCUSDT") -> str:
     """Get TradingView scanner indicators for a symbol"""
     try:

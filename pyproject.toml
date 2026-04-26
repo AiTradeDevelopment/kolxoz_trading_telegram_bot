@@ -5,10 +5,10 @@ description = "AI Telegram Bot for kolxoz trading"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "agno>=2.6.1",
     "aiogram>=3.25.0",
     "mistralai>=2.0.2",
     "openai",
     "pydantic-ai",
     "python-dotenv>=1.2.1",
-    "upsonic>=0.73.2",
 ]

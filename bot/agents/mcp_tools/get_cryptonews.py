@@ -1,10 +1,8 @@
 import json
 
 import httpx
-from upsonic.tools import tool
+from agno.tools import tool
 
-
-@tool
 async def get_coindesk_news(query: str = "Bitcoin BTC") -> str:
     """Fetches news articles from the Coindesk News API based on a search query."""
     url = "https://data-api.coindesk.com/news/v1/search"
