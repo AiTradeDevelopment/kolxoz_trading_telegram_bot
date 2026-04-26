@@ -7,6 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from dotenv import load_dotenv
+from bot.middlewares.throttling import ThrottlingMiddleware
 
 # Load environment variables: try project root first, then fallback to bot/.env
 load_dotenv()
@@ -33,3 +34,6 @@ bot: Bot = Bot(
 
 storage: MemoryStorage = MemoryStorage()
 dp: Dispatcher = Dispatcher(storage=storage)
+
+dp.message.middleware(ThrottlingMiddleware())
+dp.callback_query.middleware(ThrottlingMiddleware())
