@@ -3,7 +3,7 @@ from aiogram.filters import CommandStart
 
 from bot.initialize_bot import bot
 from bot.keyboards.inline.menu import main_keyboard
-from bot.utils.clean_text import clean_text
+from bot.utils.format_position import format_position
 from bot.utils.get_decision import get_decision
 
 start_command_router = Router()
@@ -28,7 +28,7 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
     model,result = await get_decision()
     await thinking_msg.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text=f"{model}\n\n{clean_text(result)}",
+        text=format_position(result),
         reply_markup=main_keyboard(),
     )
 
