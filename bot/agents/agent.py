@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 AVAILABLE_MODELS = [
     "mistralai/devstral-2-123b-instruct-2512",
-    "deepseek-ai/deepseek-v4-flash",
-    "google/gemma-4-31b-it"
+    "deepseek-ai/deepseek-v4-pro",
+    "qwen/qwen3-coder-480b-a35b-instruct"
 ]
 
 def get_random_model():
