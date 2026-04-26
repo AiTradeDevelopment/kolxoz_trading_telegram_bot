@@ -50,10 +50,11 @@ async def main():
 
             print("Fetching decision (this may take a minute, check logs below for tool calls)...")
             # This will call the function we just added logging to
-            result = await fetch_decision(agent, symbol)
+            result_data = await fetch_decision(agent, symbol)
 
-            if result and result.strip():
-                print(f"✅ SUCCESS: Received valid response ({len(result)} characters)")
+            if result_data and result_data[0] and result_data[0].strip():
+                content, final_model = result_data
+                print(f"✅ SUCCESS: Received valid response from {final_model} ({len(content)} characters)")
                 success_count += 1
             else:
                 print(f"❌ FAILED: Received None or empty response")

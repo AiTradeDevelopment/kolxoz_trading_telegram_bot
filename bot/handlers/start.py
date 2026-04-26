@@ -45,11 +45,11 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
         task = asyncio.create_task(fetch_decision(agent))
 
         # Periodically update the message while the AI is thinking
-        result = None
+        response_data = None
         while not task.done():
             try:
                 # Wait for a short interval (15 seconds) before updating the status
-                result = await asyncio.wait_for(task, timeout=15.0)
+                response_data = await asyncio.wait_for(task, timeout=15.0)
                 break  # Task completed successfully
             except asyncio.TimeoutError:
                 # Update message to indicate that it's still processing
@@ -58,15 +58,18 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
                     reply_markup=None,
                 )
 
-        if result is None:
+        if response_data is None or response_data[0] is None:
+            # Use the model name from the agent if the result is None
+            final_model = response_data[1] if response_data else model_name
             await thinking_msg.edit_text(
-                text=f"⚠️ <b>AI failed to provide a response</b>\n\n🤖 <b>Model:</b> {model_name}",
+                text=f"⚠️ <b>AI failed to provide a response after trying available models</b>\n\n🤖 <b>Model:</b> {final_model}",
                 reply_markup=main_keyboard(),
             )
             return
 
+        result_content, final_model = response_data
         await thinking_msg.edit_text(
-            text=format_position(result, model_name),
+            text=format_position(result_content, final_model),
             reply_markup=main_keyboard(),
         )
     finally:

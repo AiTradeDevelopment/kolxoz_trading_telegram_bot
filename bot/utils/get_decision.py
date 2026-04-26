@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from bot.agents.agent import create_agent
+from typing import Tuple, Optional
+from bot.agents.agent import create_agent, AVAILABLE_MODELS
 
 logger = logging.getLogger(__name__)
 
@@ -11,32 +12,50 @@ def create_trading_agent():
     """
     return create_agent()
 
-async def fetch_decision(agent, symbol: str = "BTCUSDT") -> str:
+async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Optional[str], str]:
     """
     Runs the agent to get a trading decision for the specified symbol.
+    Implements fallback logic to try other models if the initial one fails.
+
+    Returns:
+        A tuple of (decision_content, final_model_id)
     """
-    logger.info(f"Fetching decision for {symbol} using model {agent.model_id}")
-    try:
-        result = await asyncio.wait_for(
-            agent.arun(
-                stream=None,
-                input=f"Проанализируй {symbol} используя все доступные инструменты и верни торговое решение.",
-                yield_run_output=True,
-            ),
-            timeout=90.0
-        )
+    tried_models = set()
+    current_agent = initial_agent
 
-        if result is None:
-            logger.error(f"Agent.arun returned None for {symbol} with model {agent.model_id}")
-            return None
+    while True:
+        model_id = current_agent.model_id
+        tried_models.add(model_id)
+        logger.info(f"Fetching decision for {symbol} using model {model_id}")
 
-        if not result.content:
-            logger.warning(f"Agent returned empty content for {symbol} with model {agent.model_id}")
+        try:
+            # Use a hard timeout of 90 seconds to prevent hanging on unresponsive models
+            result = await asyncio.wait_for(
+                current_agent.arun(
+                    stream=None,
+                    input=f"Проанализируй {symbol} используя все доступные инструменты и верни торговое решение.",
+                    yield_run_output=True,
+                ),
+                timeout=90.0
+            )
 
-        return result.content
-    except asyncio.TimeoutError:
-        logger.error(f"AI request timed out after 90 seconds for {symbol} with model {agent.model_id}")
-        return None
-    except Exception as e:
-        logger.exception(f"Error occurred while fetching decision for {symbol} with model {agent.model_id}: {e}")
-        return None
+            if result and result.content:
+                logger.info(f"Successfully received response from model {model_id}")
+                return result.content, model_id
+
+            logger.warning(f"Model {model_id} returned empty response for {symbol}")
+
+        except asyncio.TimeoutError:
+            logger.error(f"AI request timed out after 90s for {symbol} with model {model_id}")
+        except Exception as e:
+            logger.exception(f"Error with model {model_id} for {symbol}: {e}")
+
+        # Try to find a fallback model from the available list
+        remaining_models = [m for m in AVAILABLE_MODELS if m not in tried_models]
+        if not remaining_models:
+            logger.error(f"All available models exhausted for {symbol}. No valid response obtained.")
+            return None, model_id
+
+        next_model = remaining_models[0]
+        logger.info(f"Fallback: switching to model {next_model}")
+        current_agent = create_agent(model_id=next_model)

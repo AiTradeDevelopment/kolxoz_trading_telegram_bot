@@ -17,19 +17,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+AVAILABLE_MODELS = [
+    "mistralai/devstral-2-123b-instruct-2512",
+    "deepseek-ai/deepseek-v4-flash",
+    "google/gemma-4-31b-it"
+]
+
 def get_random_model():
-    models = [
-        "mistralai/devstral-2-123b-instruct-2512",
-        "deepseek-ai/deepseek-v4-flash",
-        "google/gemma-4-31b-it"
-    ]
-    selected = random.choice(models)
+    selected = random.choice(AVAILABLE_MODELS)
     logger.info("SELECTED_MODEL: %s", selected)
     return selected
 
 
-def create_agent():
-    model_id = get_random_model()
+def create_agent(model_id: str = None):
+    if model_id is None:
+        model_id = get_random_model()
+
     agent = Agent(
         model=Nvidia(model_id, temperature=0.2, frequency_penalty=0.0, presence_penalty=0.0),
         name="BTC Trading Agent",
