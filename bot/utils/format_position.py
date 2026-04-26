@@ -2,6 +2,8 @@ import json
 import re
 
 def format_position(content: str, model_name: str = "") -> str:
+    if content is None:
+        return f"⚠️ <b>AI returned an empty response</b>\n\n🤖 <b>Model:</b> {model_name}"
     try:
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
         if json_match:
@@ -41,4 +43,5 @@ def format_position(content: str, model_name: str = "") -> str:
             f"🤖 <b>Model:</b> {model_name}"
         )
     except Exception as e:
-        return f"⚠️ <b>Error parsing AI response</b>\n\n<code>{content[:200]}...</code>"
+        preview = content[:200] if content else "Empty content"
+        return f"⚠️ <b>Error parsing AI response</b>\n\n<code>{preview}...</code>"
