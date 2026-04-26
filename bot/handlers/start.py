@@ -25,10 +25,10 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
         text="<b>I'm thinking🤔</b>",
         reply_markup=None,
     )
-    result = await get_decision()
+    model,result = await get_decision()
     await thinking_msg.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text=clean_text(result),
+        text=f"{model}\n\n{clean_text(result)}",
         reply_markup=main_keyboard(),
     )
 
