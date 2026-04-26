@@ -1,10 +1,7 @@
 import json
 
 import httpx
-from upsonic.tools import tool
 
-
-@tool
 def get_binance_candles(symbol: str = "BTCUSDT", interval: str = "1d", limit: int = 100) -> str:
     """Get OHLCV candles from Binance API. Intervals: 1m,5m,15m,1h,4h,1d"""
     r = httpx.get(

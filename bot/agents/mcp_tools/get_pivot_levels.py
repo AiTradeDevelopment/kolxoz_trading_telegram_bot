@@ -1,10 +1,7 @@
 import json
 import httpx
 
-from upsonic.tools import tool
 
-
-@tool
 def get_pivot_levels(symbol: str = "BTCUSDT") -> str:
     """Calculate classic pivot points from yesterday's daily candle"""
     r = httpx.get(
