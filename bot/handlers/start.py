@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart
 
 from bot.initialize_bot import bot
 from bot.keyboards.inline.menu import main_keyboard
+from bot.utils.clean_text import clean_text
 from bot.utils.get_decision import get_decision
 
 start_command_router = Router()
@@ -19,16 +20,16 @@ async def start_handler(message: types.Message):
 
 @start_command_router.callback_query(lambda c: c.data in ["decision"])
 async def crypto_choice_handler(callback_query: types.CallbackQuery):
-    await callback_query.message.edit_text(
+    thinking_msg = await callback_query.message.answer(
         inline_message_id=str(callback_query.message.message_id),
         text="<b>I'm thinking🤔</b>",
         reply_markup=None,
     )
     result = await get_decision()
-    await callback_query.message.edit_text(
+    await thinking_msg.edit_text(
         inline_message_id=str(callback_query.message.message_id),
-        text=result,
-        reply_markup=None,
+        text=clean_text(result),
+        reply_markup=main_keyboard(),
     )
 
 
