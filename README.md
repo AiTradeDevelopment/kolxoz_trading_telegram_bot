@@ -22,18 +22,7 @@ Real-time market analysis using ICT/SMC methodology with LLM-driven trade decisi
 
 ## 🎯 Overview
 
-Kolxoz Trading Bot is a Telegram bot that provides intelligent cryptocurrency trading analysis and signals. It fetches real-time market data from multiple sources and uses Large Language Models (via NVIDIA NIM) to generate structured trading decisions based on professional ICT/SMC methodology.
-
-### Key Highlights
-
-- 🤖 **LLM-Powered Analysis** — Uses NVIDIA NIM with models like Devstral and DeepSeek-V4 for multi-timeframe market analysis
-- 📊 **Real-Time Data** — Binance OHLCV candles, TradingView indicators, crypto news aggregation
-- 🎯 **ICT/SMC Methodology** — Institutional-grade trading framework with structured scoring
-- ⚡ **Async-First** — Built on `aiogram` and `asyncio` for responsive Telegram interactions
-- 🔒 **Type-Safe** — Pydantic models for trade decisions, score breakdowns, and risk management
-- 🌍 **Russian Language** — All AI outputs are translated to Russian for the target audience
-
----
+Kolxoz Trading Bot is a Telegram bot that provides intelligent cryptocurrency trading analysis and signals
 
 ## 🚀 Quick Start
 
