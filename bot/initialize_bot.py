@@ -35,5 +35,6 @@ bot: Bot = Bot(
 storage: MemoryStorage = MemoryStorage()
 dp: Dispatcher = Dispatcher(storage=storage)
 
-dp.message.middleware(ThrottlingMiddleware())
-dp.callback_query.middleware(ThrottlingMiddleware())
+throttling_middleware = ThrottlingMiddleware()
+dp.message.middleware(throttling_middleware)
+dp.callback_query.middleware(throttling_middleware)
