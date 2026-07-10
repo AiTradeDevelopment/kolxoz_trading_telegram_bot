@@ -26,24 +26,25 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
     current_agent = initial_agent
 
     while True:
-        model_id = current_agent.model_id
+        model_id = current_agent.model_id # type: ignore
         tried_models.add(model_id)
         logger.info(f"DEBUG: Current iteration. Tried so far: {tried_models}")
         logger.info(f"Fetching decision for {symbol} using model {model_id}")
 
         try:
-            # Use a hard timeout of 90 seconds to prevent hanging on unresponsive models
+            # Use a hard timeout of 300 seconds to prevent hanging on unresponsive models
             result = await asyncio.wait_for(
                 current_agent.arun(
-                    stream=None,
+                    stream=None, # type: ignore
                     input=f"Проанализируй {symbol} используя все доступные инструменты и верни торговое решение.",
                     yield_run_output=True,
-                ),
-                timeout=90.0
+                ), # type: ignore
+                timeout=300.0
             )
 
             if result and result.content:
                 logger.info(f"Successfully received response from model {model_id}")
+                logger.info("AI market analysis from %s:\n%s", model_id, result.content)
                 print(f">>> [DEBUG_PRINT] SUCCESS! Returning result from model {model_id}")
                 return result.content, model_id
 
@@ -51,7 +52,7 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
 
         except asyncio.TimeoutError:
             print(f">>> [DEBUG_PRINT] TIMEOUT occurred for model {model_id}")
-            logger.error(f"AI request timed out after 90s for {symbol} with model {model_id}")
+            logger.error(f"AI request timed out after 300s for {symbol} with model {model_id}")
         except Exception as e:
             print(f">>> [DEBUG_PRINT] EXCEPTION occurred: {e}")
             logger.exception(f"Error with model {model_id} for {symbol}: {e}")

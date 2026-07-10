@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from aiogram import Router, types
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart
@@ -10,6 +11,7 @@ from bot.utils.get_decision import create_trading_agent, fetch_decision
 
 start_command_router = Router()
 BUSY_USERS = set()
+logger = logging.getLogger(__name__)
 
 
 @start_command_router.message(CommandStart())
@@ -21,60 +23,45 @@ async def start_handler(message: types.Message):
     )
 
 
-@start_command_router.callback_query(lambda c: c.data in ["decision"])
-async def crypto_choice_handler(callback_query: types.CallbackQuery):
-    user_id = callback_query.from_user.id
-    if user_id in BUSY_USERS:
-        await callback_query.answer(
-            text="⚠️ Analysis is already in progress. Please wait.",
-            show_alert=True
-        )
+async def send_trading_analysis(chat_id: int) -> None:
+    if chat_id in BUSY_USERS:
+        logger.info("Market analysis is already in progress for chat %s", chat_id)
         return
 
-    BUSY_USERS.add(user_id)
+    BUSY_USERS.add(chat_id)
     try:
-        # Initialize agent immediately to get the model name
         agent = create_trading_agent()
         model_name = agent.model_id
 
-        thinking_msg = await callback_query.message.answer(
+        thinking_msg = await bot.send_message(
+            chat_id=chat_id,
             text=f"<b>I'm thinking🤔</b>\n🤖 <b>Model:</b> {model_name}",
             reply_markup=None,
         )
 
-        # Create a task to fetch the decision in the background
         task = asyncio.create_task(fetch_decision(agent))
 
-        # Periodically update the message while the AI is thinking
         while not task.done():
-            # Wait for either the task to complete or the timeout to trigger
-            # asyncio.wait does NOT cancel the task, unlike wait_for
             done, _ = await asyncio.wait([task], timeout=15.0)
 
             if task in done:
                 break
 
-            # Update message to indicate that it's still processing
             try:
                 await thinking_msg.edit_text(
                     text=f"<b>I'm still thinking...🤔</b>\nStill collecting data and analyzing. Please wait a bit more.\n\n🤖 <b>Model:</b> {model_name}",
                     reply_markup=None,
                 )
             except TelegramBadRequest:
-                # Ignore error if message content hasn't changed
                 pass
 
-        # Retrieve the final result from the task
         try:
             response_data = await task
         except Exception as e:
-            # Log the exception and set response_data to None so the error message is shown
-            import logging
-            logging.getLogger(__name__).exception(f"AI task failed with exception: {e}")
+            logger.exception("AI task failed with exception: %s", e)
             response_data = None
 
         if response_data is None or (isinstance(response_data, tuple) and response_data[0] is None):
-            # Use the model name from the agent if the result is None
             final_model = response_data[1] if response_data else model_name
             await thinking_msg.edit_text(
                 text=f"⚠️ <b>AI failed to provide a response after trying available models</b>\n\n🤖 <b>Model:</b> {final_model}",
@@ -88,7 +75,21 @@ async def crypto_choice_handler(callback_query: types.CallbackQuery):
             reply_markup=main_keyboard(),
         )
     finally:
-        BUSY_USERS.remove(user_id)
+        BUSY_USERS.discard(chat_id)
+
+
+@start_command_router.callback_query(lambda c: c.data in ["decision"])
+async def crypto_choice_handler(callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    if chat_id in BUSY_USERS:
+        await callback_query.answer(
+            text="⚠️ Analysis is already in progress. Please wait.",
+            show_alert=True
+        )
+        return
+
+    await callback_query.answer()
+    await send_trading_analysis(chat_id)
 
 
 @start_command_router.callback_query(lambda c: c.data == "back_to_main")
