@@ -16,6 +16,41 @@ class _FakeAgent:
 
 
 class TestModelOrder(unittest.IsolatedAsyncioTestCase):
+    async def test_valid_response_is_returned_without_fallback(self) -> None:
+        model_id = agent_module.AVAILABLE_MODELS[0]
+        content = '{"decision": "WAIT", "summary": "News source returned error: unavailable"}'
+        agent = _FakeAgent(model_id, content)
+
+        with patch.object(get_decision, "create_agent") as create_fallback:
+            result = await get_decision.fetch_decision(agent)
+
+        self.assertEqual(result, (content, model_id))
+        create_fallback.assert_not_called()
+
+    async def test_error_response_falls_back_to_valid_response(self) -> None:
+        first, second = agent_module.AVAILABLE_MODELS[:2]
+        valid_content = '{"decision": "WAIT"}'
+        error_responses = (
+            "  ERROR: service unavailable",
+            "Error code: 429 - rate limit exceeded",
+            "Ошибка: сервис недоступен",
+            '{"error": {"message": "rate limit exceeded", "code": 429}}',
+            " \n\t",
+        )
+
+        for error_content in error_responses:
+            with self.subTest(content=error_content):
+                initial_agent = _FakeAgent(first, error_content)
+                fallback_agent = _FakeAgent(second, valid_content)
+
+                with patch.object(
+                    get_decision, "create_agent", return_value=fallback_agent
+                ) as create_fallback:
+                    result = await get_decision.fetch_decision(initial_agent)
+
+                self.assertEqual(result, (valid_content, second))
+                create_fallback.assert_called_once_with(model_id=second)
+
     def test_primary_models_are_selected_in_list_order(self) -> None:
         expected = agent_module.AVAILABLE_MODELS + [agent_module.AVAILABLE_MODELS[0]]
 

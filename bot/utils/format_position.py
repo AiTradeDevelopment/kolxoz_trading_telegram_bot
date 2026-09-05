@@ -22,10 +22,12 @@ def format_position(content: str, model_name: str = "") -> str:
 
         data = json.loads(json_str)
         decision = str(data.get("decision", "WAIT")).upper()
+        summary_raw = data.get("summary") or "Нет описания."
+        summary = markdown_to_telegram_html(str(summary_raw))
         if decision == "WAIT":
             return (
                 f"⏳ <b>Сейчас нет чёткой точки входа.</b>\n\n"
-                f"<i>ИИ ждёт более сильного подтверждения по стратегии.</i>\n\n"
+                f"📝 <b>Анализ:</b>\n{summary}\n\n"
                 f"🤖 <b>Модель:</b> {html.escape(model_name)}"
             )
 
@@ -42,13 +44,11 @@ def format_position(content: str, model_name: str = "") -> str:
             score_int = 0
         score_bar = "⭐" * score_int + "☐" * (10 - score_int)
 
-        summary_raw = data.get("summary", "Нет описания.")
-        summary = markdown_to_telegram_html(str(summary_raw))
-
         emoji = "🟢" if decision == "LONG" else "🔴"
 
         return (
-            f"{emoji} <b>ТОРГОВАЯ ПОЗИЦИЯ: {decision} {instrument}</b>\n"
+            f"{emoji} <b>ТОРГОВАЯ ПОЗИЦИЯ: {decision} {instrument}</b>\n\n"
+            f"📝 <b>Анализ:</b>\n{summary}\n\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🎯 <b>Вход:</b> {entry if entry else 'По рынку'}\n"
             f"🛑 <b>Стоп-лосс:</b> {sl if sl else 'N/A'}\n"
@@ -56,7 +56,6 @@ def format_position(content: str, model_name: str = "") -> str:
             f"📊 <b>Risk/Reward:</b> {rr if rr else 'N/A'}\n"
             f"⭐ <b>Уверенность:</b> {score_bar} {score_int}/10\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"📝 <b>Анализ:</b>\n{summary}\n\n"
             f"🤖 <b>Модель:</b> {html.escape(model_name)}"
         )
     except Exception:
