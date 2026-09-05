@@ -5,12 +5,24 @@ from bot.agents.agent import create_agent, AVAILABLE_MODELS
 
 logger = logging.getLogger(__name__)
 
+
 def create_trading_agent():
     """
     Creates and returns a trading agent.
-    The model is randomly selected inside create_agent().
+    Primary models are selected in AVAILABLE_MODELS order.
     """
     return create_agent()
+
+
+def _ordered_fallback_models(initial_model_id: str) -> list[str]:
+    """Return each remaining model once, continuing from the initial model."""
+    try:
+        initial_index = AVAILABLE_MODELS.index(initial_model_id)
+    except ValueError:
+        return list(AVAILABLE_MODELS)
+
+    return AVAILABLE_MODELS[initial_index + 1 :] + AVAILABLE_MODELS[:initial_index]
+
 
 async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Optional[str], str]:
     """
@@ -22,12 +34,13 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
     """
     print(">>> [DEBUG_PRINT] Starting fetch_decision")
     logger.info(f"DEBUG: Starting fetch_decision. Available models: {AVAILABLE_MODELS}")
-    tried_models = set()
     current_agent = initial_agent
+    fallback_models = iter(_ordered_fallback_models(initial_agent.model_id))
+    tried_models: list[str] = []
 
     while True:
         model_id = current_agent.model_id # type: ignore
-        tried_models.add(model_id)
+        tried_models.append(model_id)
         logger.info(f"DEBUG: Current iteration. Tried so far: {tried_models}")
         logger.info(f"Fetching decision for {symbol} using model {model_id}")
 
@@ -57,14 +70,12 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
             print(f">>> [DEBUG_PRINT] EXCEPTION occurred: {e}")
             logger.exception(f"Error with model {model_id} for {symbol}: {e}")
 
-        # Try to find a fallback model from the available list
-        remaining_models = [m for m in AVAILABLE_MODELS if m not in tried_models]
-        logger.info(f"DEBUG: Remaining models to try: {remaining_models}")
-        if not remaining_models:
+        # Continue from the initial model's position and wrap around the list once.
+        next_model = next(fallback_models, None)
+        if next_model is None:
             print(">>> [DEBUG_PRINT] All models exhausted. Returning None")
             logger.error(f"All available models exhausted for {symbol}. No valid response obtained.")
             return None, model_id
 
-        next_model = remaining_models[0]
         logger.info(f"Fallback: switching to model {next_model}")
         current_agent = create_agent(model_id=next_model)

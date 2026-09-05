@@ -1,5 +1,3 @@
-import asyncio
-import random
 import logging
 from dotenv import load_dotenv
 from agno.models.nvidia import Nvidia
@@ -19,19 +17,29 @@ logger = logging.getLogger(__name__)
 
 AVAILABLE_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b",
-    "deepseek-ai/deepseek-v4-pro",
-    "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-pro-0813",
+    "moonshotai/kimi-k3",
 ]
 
-def get_random_model():
-    selected = random.choice(AVAILABLE_MODELS)
+_next_model_index = 0
+
+
+def get_next_model() -> str:
+    """Return primary models in the same order as ``AVAILABLE_MODELS``."""
+    global _next_model_index
+
+    if not AVAILABLE_MODELS:
+        raise RuntimeError("AVAILABLE_MODELS must contain at least one model")
+
+    selected = AVAILABLE_MODELS[_next_model_index % len(AVAILABLE_MODELS)]
+    _next_model_index = (_next_model_index + 1) % len(AVAILABLE_MODELS)
     logger.info("SELECTED_MODEL: %s", selected)
     return selected
 
 
-def create_agent(model_id: str = None):
+def create_agent(model_id: str | None = None):
     if model_id is None:
-        model_id = get_random_model()
+        model_id = get_next_model()
 
     agent = Agent(
         model=Nvidia(model_id, temperature=0.2, frequency_penalty=0.0, presence_penalty=0.0),
