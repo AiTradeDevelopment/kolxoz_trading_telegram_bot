@@ -5,53 +5,24 @@ from bot.agents.agent import create_agent, AVAILABLE_MODELS
 
 logger = logging.getLogger(__name__)
 
-# Agno иногда не выбрасывает исключение при ошибке модели/провайдера, а
-# кладёт текст ошибки прямо в result.content. Такие ответы нельзя считать
-# успехом, иначе пользователь получит "200 OK" с текстом "404 page not found"
-# вместо реального фолбэка на следующую модель.
-KNOWN_ERROR_MARKERS = (
-    "unknown model error",
-    "error code:",
-    "has reached its end of life",
-    "model not found",
-    "page not found",
-    "not found",
-    "bad gateway",
-    "internal server error",
-    "service unavailable",
-    "unauthorized",
-    "rate limit",
-)
-
-# HTTP-коды, которые иногда прилетают как открытый текст в content
-_ERROR_STATUS_CODES = ("400", "401", "403", "404", "410", "429", "500", "502", "503", "504")
-
-
-def _looks_like_error(content: str) -> bool:
-    stripped = content.strip()
-    if not stripped:
-        return True
-
-    lowered = stripped.lower()
-    if any(marker in lowered for marker in KNOWN_ERROR_MARKERS):
-        return True
-
-    # Реальный анализ рынка — это длинный текст (десятки-сотни слов) и/или
-    # JSON с решением. Короткая строка с HTTP-кодом внутри почти наверняка
-    # техническая ошибка провайдера, а не торговое решение.
-    if len(stripped) < 200 and "{" not in stripped:
-        if any(code in stripped for code in _ERROR_STATUS_CODES):
-            return True
-
-    return False
-
 
 def create_trading_agent():
     """
     Creates and returns a trading agent.
-    The model is randomly selected inside create_agent().
+    Primary models are selected in AVAILABLE_MODELS order.
     """
     return create_agent()
+
+
+def _ordered_fallback_models(initial_model_id: str) -> list[str]:
+    """Return each remaining model once, continuing from the initial model."""
+    try:
+        initial_index = AVAILABLE_MODELS.index(initial_model_id)
+    except ValueError:
+        return list(AVAILABLE_MODELS)
+
+    return AVAILABLE_MODELS[initial_index + 1 :] + AVAILABLE_MODELS[:initial_index]
+
 
 async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Optional[str], str]:
     """
@@ -61,13 +32,16 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
     Returns:
         A tuple of (decision_content, final_model_id)
     """
-    logger.debug("Starting fetch_decision. Available models: %s", AVAILABLE_MODELS)
-    tried_models = set()
+    print(">>> [DEBUG_PRINT] Starting fetch_decision")
+    logger.info(f"DEBUG: Starting fetch_decision. Available models: {AVAILABLE_MODELS}")
     current_agent = initial_agent
+    fallback_models = iter(_ordered_fallback_models(initial_agent.model_id))
+    tried_models: list[str] = []
 
     while True:
         model_id = current_agent.model_id # type: ignore
-        tried_models.add(model_id)
+        tried_models.append(model_id)
+        logger.info(f"DEBUG: Current iteration. Tried so far: {tried_models}")
         logger.info(f"Fetching decision for {symbol} using model {model_id}")
 
         try:
@@ -97,12 +71,12 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
         except Exception as e:
             logger.exception(f"Error with model {model_id} for {symbol}: {e}")
 
-        # Try to find a fallback model from the available list
-        remaining_models = [m for m in AVAILABLE_MODELS if m not in tried_models]
-        if not remaining_models:
+        # Continue from the initial model's position and wrap around the list once.
+        next_model = next(fallback_models, None)
+        if next_model is None:
+            print(">>> [DEBUG_PRINT] All models exhausted. Returning None")
             logger.error(f"All available models exhausted for {symbol}. No valid response obtained.")
             return None, model_id
 
-        next_model = remaining_models[0]
         logger.info(f"Fallback: switching to model {next_model}")
         current_agent = create_agent(model_id=next_model)
