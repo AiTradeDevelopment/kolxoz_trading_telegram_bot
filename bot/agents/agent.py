@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from dotenv import load_dotenv
 from agno.models.nvidia import Nvidia
 from agno.agent import Agent
@@ -54,5 +55,8 @@ def create_agent(model_id: str | None = None):
             get_coindesk_news,
             fetch_mcp_data],
     )
-    agent.model_id = model_id
+    # agno.Agent не объявляет model_id как штатное поле, поэтому Pylance
+    # ругается на динамическое присваивание — это ожидаемо и безопасно,
+    # setattr явно показывает, что мы намеренно вешаем свой атрибут.
+    setattr(agent, "model_id", model_id)
     return agent

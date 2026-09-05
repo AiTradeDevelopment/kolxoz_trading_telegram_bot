@@ -55,19 +55,20 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
                 timeout=300.0
             )
 
-            if result and result.content:
+            if result and result.content and not _looks_like_error(result.content):
                 logger.info(f"Successfully received response from model {model_id}")
                 logger.info("AI market analysis from %s:\n%s", model_id, result.content)
-                print(f">>> [DEBUG_PRINT] SUCCESS! Returning result from model {model_id}")
                 return result.content, model_id
 
-            logger.warning(f"DEBUG: Model {model_id} returned empty response (result exists but content is empty/None)")
+            logger.warning(
+                "Model %s returned no usable response (empty or error-like content): %r",
+                model_id,
+                result.content if result else None,
+            )
 
         except asyncio.TimeoutError:
-            print(f">>> [DEBUG_PRINT] TIMEOUT occurred for model {model_id}")
             logger.error(f"AI request timed out after 300s for {symbol} with model {model_id}")
         except Exception as e:
-            print(f">>> [DEBUG_PRINT] EXCEPTION occurred: {e}")
             logger.exception(f"Error with model {model_id} for {symbol}: {e}")
 
         # Continue from the initial model's position and wrap around the list once.
