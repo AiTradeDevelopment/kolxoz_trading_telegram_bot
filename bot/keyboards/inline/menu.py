@@ -2,9 +2,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def main_keyboard() -> InlineKeyboardMarkup:
-    """Create the main inline keyboard."""
+    """Кнопка повтора анализа, показывается под карточкой сигнала."""
     buttons = [
-        [InlineKeyboardButton(text="Make decision BTC/USDT", callback_data="decision", style="primary")],
+        [InlineKeyboardButton(text="🔄 Повторить анализ", callback_data="decision")],
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard

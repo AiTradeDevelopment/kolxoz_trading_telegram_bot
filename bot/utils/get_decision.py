@@ -5,6 +5,47 @@ from bot.agents.agent import create_agent, AVAILABLE_MODELS
 
 logger = logging.getLogger(__name__)
 
+# Agno иногда не выбрасывает исключение при ошибке модели/провайдера, а
+# кладёт текст ошибки прямо в result.content. Такие ответы нельзя считать
+# успехом, иначе пользователь получит "200 OK" с текстом "404 page not found"
+# вместо реального фолбэка на следующую модель.
+KNOWN_ERROR_MARKERS = (
+    "unknown model error",
+    "error code:",
+    "has reached its end of life",
+    "model not found",
+    "page not found",
+    "not found",
+    "bad gateway",
+    "internal server error",
+    "service unavailable",
+    "unauthorized",
+    "rate limit",
+)
+
+# HTTP-коды, которые иногда прилетают как открытый текст в content
+_ERROR_STATUS_CODES = ("400", "401", "403", "404", "410", "429", "500", "502", "503", "504")
+
+
+def _looks_like_error(content: str) -> bool:
+    stripped = content.strip()
+    if not stripped:
+        return True
+
+    lowered = stripped.lower()
+    if any(marker in lowered for marker in KNOWN_ERROR_MARKERS):
+        return True
+
+    # Реальный анализ рынка — это длинный текст (десятки-сотни слов) и/или
+    # JSON с решением. Короткая строка с HTTP-кодом внутри почти наверняка
+    # техническая ошибка провайдера, а не торговое решение.
+    if len(stripped) < 200 and "{" not in stripped:
+        if any(code in stripped for code in _ERROR_STATUS_CODES):
+            return True
+
+    return False
+
+
 def create_trading_agent():
     """
     Creates and returns a trading agent.
@@ -20,15 +61,13 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
     Returns:
         A tuple of (decision_content, final_model_id)
     """
-    print(">>> [DEBUG_PRINT] Starting fetch_decision")
-    logger.info(f"DEBUG: Starting fetch_decision. Available models: {AVAILABLE_MODELS}")
+    logger.debug("Starting fetch_decision. Available models: %s", AVAILABLE_MODELS)
     tried_models = set()
     current_agent = initial_agent
 
     while True:
         model_id = current_agent.model_id # type: ignore
         tried_models.add(model_id)
-        logger.info(f"DEBUG: Current iteration. Tried so far: {tried_models}")
         logger.info(f"Fetching decision for {symbol} using model {model_id}")
 
         try:
@@ -42,26 +81,25 @@ async def fetch_decision(initial_agent, symbol: str = "BTCUSDT") -> Tuple[Option
                 timeout=300.0
             )
 
-            if result and result.content:
+            if result and result.content and not _looks_like_error(result.content):
                 logger.info(f"Successfully received response from model {model_id}")
                 logger.info("AI market analysis from %s:\n%s", model_id, result.content)
-                print(f">>> [DEBUG_PRINT] SUCCESS! Returning result from model {model_id}")
                 return result.content, model_id
 
-            logger.warning(f"DEBUG: Model {model_id} returned empty response (result exists but content is empty/None)")
+            logger.warning(
+                "Model %s returned no usable response (empty or error-like content): %r",
+                model_id,
+                result.content if result else None,
+            )
 
         except asyncio.TimeoutError:
-            print(f">>> [DEBUG_PRINT] TIMEOUT occurred for model {model_id}")
             logger.error(f"AI request timed out after 300s for {symbol} with model {model_id}")
         except Exception as e:
-            print(f">>> [DEBUG_PRINT] EXCEPTION occurred: {e}")
             logger.exception(f"Error with model {model_id} for {symbol}: {e}")
 
         # Try to find a fallback model from the available list
         remaining_models = [m for m in AVAILABLE_MODELS if m not in tried_models]
-        logger.info(f"DEBUG: Remaining models to try: {remaining_models}")
         if not remaining_models:
-            print(">>> [DEBUG_PRINT] All models exhausted. Returning None")
             logger.error(f"All available models exhausted for {symbol}. No valid response obtained.")
             return None, model_id
 

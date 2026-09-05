@@ -1,6 +1,7 @@
 import asyncio
 import random
 import logging
+from typing import Optional
 from dotenv import load_dotenv
 from agno.models.nvidia import Nvidia
 from agno.agent import Agent
@@ -19,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 AVAILABLE_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b",
-    "deepseek-ai/deepseek-v4-pro",
-    "deepseek-ai/deepseek-v4-flash",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "moonshotai/kimi-k2.6",
+    "openai/gpt-oss-20b",
 ]
 
 def get_random_model():
@@ -29,7 +31,7 @@ def get_random_model():
     return selected
 
 
-def create_agent(model_id: str = None):
+def create_agent(model_id: Optional[str] = None) -> Agent:
     if model_id is None:
         model_id = get_random_model()
 
@@ -46,5 +48,8 @@ def create_agent(model_id: str = None):
             get_coindesk_news,
             fetch_mcp_data],
     )
-    agent.model_id = model_id
+    # agno.Agent не объявляет model_id как штатное поле, поэтому Pylance
+    # ругается на динамическое присваивание — это ожидаемо и безопасно,
+    # setattr явно показывает, что мы намеренно вешаем свой атрибут.
+    setattr(agent, "model_id", model_id)
     return agent
