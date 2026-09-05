@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 AVAILABLE_MODELS = [
-    "nvidia/nemotron-3-super-120b-a12b",
     "deepseek-ai/deepseek-v4-pro-0813",
+    "nvidia/nemotron-3-super-120b-a12b",
     "moonshotai/kimi-k3",
 ]
 
