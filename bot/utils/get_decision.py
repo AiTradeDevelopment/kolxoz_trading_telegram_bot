@@ -1,9 +1,29 @@
 import asyncio
+import json
 import logging
 from typing import Tuple, Optional
 from bot.agents.agent import create_agent, AVAILABLE_MODELS
 
 logger = logging.getLogger(__name__)
+
+
+def _looks_like_error(content: str) -> bool:
+    """Recognize empty responses and explicit provider error messages."""
+    text = content.strip()
+    if not text:
+        return True
+
+    if text.casefold().startswith(
+        ("error:", "error code:", "exception:", "traceback (most recent call last):", "ошибка:")
+    ):
+        return True
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+
+    return isinstance(data, dict) and bool(data.get("error"))
 
 
 def create_trading_agent():
